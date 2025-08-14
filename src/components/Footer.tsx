@@ -4,46 +4,22 @@ import { Todo } from '../types/Todo';
 
 type Props = {
   todos: Todo[];
-  allTodos: Todo[];
   currentSelect: string;
-  onSaveTodos: (todos: Todo[]) => void;
-  onSaveCurrentSelect: (filter: string) => void;
+  onSelectStatus: (status: 'All' | 'Active' | 'Completed') => void;
   onClearCompleted: () => void;
 };
 
 export const Footer: React.FC<Props> = ({
   todos,
-  allTodos,
   currentSelect,
-  onSaveTodos,
-  onSaveCurrentSelect,
+  onSelectStatus,
   onClearCompleted,
 }) => {
-  const filterByStatus = (event: React.MouseEvent<HTMLAnchorElement>) => {
-    const filter = event.currentTarget.textContent;
-
-    onSaveTodos(
-      allTodos.filter((todo: Todo) => {
-        if (filter === 'Active') {
-          return !todo.completed;
-        } else if (filter === 'Completed') {
-          return todo.completed;
-        }
-
-        return true;
-      }),
-    );
-
-    if (filter !== null) {
-      onSaveCurrentSelect(filter);
-    }
-  };
-
   const completedTodos = () => {
     return todos.some(todo => todo.completed);
   };
 
-  const todosCounter = () => allTodos.filter(todo => !todo.completed).length;
+  const todosCounter = () => todos.filter(todo => !todo.completed).length;
 
   return (
     <footer className="todoapp__footer" data-cy="Footer">
@@ -59,7 +35,10 @@ export const Footer: React.FC<Props> = ({
             selected: currentSelect === 'All',
           })}
           data-cy="FilterLinkAll"
-          onClick={filterByStatus}
+          onClick={event => {
+            event.preventDefault();
+            onSelectStatus('All');
+          }}
         >
           All
         </a>
@@ -70,7 +49,10 @@ export const Footer: React.FC<Props> = ({
             selected: currentSelect === 'Active',
           })}
           data-cy="FilterLinkActive"
-          onClick={filterByStatus}
+          onClick={event => {
+            event.preventDefault();
+            onSelectStatus('Active');
+          }}
         >
           Active
         </a>
@@ -81,7 +63,10 @@ export const Footer: React.FC<Props> = ({
             selected: currentSelect === 'Completed',
           })}
           data-cy="FilterLinkCompleted"
-          onClick={filterByStatus}
+          onClick={event => {
+            event.preventDefault();
+            onSelectStatus('Completed');
+          }}
         >
           Completed
         </a>

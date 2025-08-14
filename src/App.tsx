@@ -10,7 +10,6 @@ import { ErrorNotification } from './components/ErrorNotification';
 import { TodoItem } from './components/TodoItem';
 
 export const App: React.FC = () => {
-  const [allTodos, setAllTodos] = useState<Todo[]>([]);
   const [todos, setTodos] = useState<Todo[]>([]);
   const [tempTodo, setTempTodo] = useState<Todo | null>(null);
   const [todoTitle, setTodoTitle] = useState('');
@@ -33,7 +32,6 @@ export const App: React.FC = () => {
     getTodos()
       .then(todosFromServer => {
         setTodos(todosFromServer);
-        setAllTodos(todosFromServer);
       })
       .catch(() => setErrorMessage('Unable to load todos'));
   }, []);
@@ -58,9 +56,6 @@ export const App: React.FC = () => {
         setTodos(currentTodos =>
           currentTodos.filter(todo => todo.id !== todoId),
         );
-        setAllTodos(currentTodos =>
-          currentTodos.filter(todo => todo.id !== todoId),
-        );
       })
       .catch(() => setErrorMessage('Unable to delete a todo'))
       .finally(() => {
@@ -75,23 +70,26 @@ export const App: React.FC = () => {
 
     const completedTodos = todos.filter(todo => todo.completed);
 
-    completedTodos.forEach(todo => {
+    const deletePromises = completedTodos.map(todo =>
       deleteTodos(todo.id)
-        .then(() => {
-          setTodos(currentTodos =>
-            currentTodos.filter(currentTodo => currentTodo.id !== todo.id),
-          );
-          setAllTodos(currentTodos =>
-            currentTodos.filter(currentTodo => currentTodo.id !== todo.id),
-          );
-          setIsDeletingId(todo.id);
-        })
-        .catch(() => setErrorMessage('Unable to delete a todo'))
-        .finally(() => {
-          setIsLoading(false);
-          setIsDeletingId(-1);
-        });
-    });
+        .then(() => todo.id)
+        .catch(() => {
+          setErrorMessage('Unable to delete a todo');
+
+          return null;
+        }),
+    );
+
+    Promise.all(deletePromises)
+      .then(deletedIds => {
+        setTodos(currentTodos =>
+          currentTodos.filter(todo => !deletedIds.includes(todo.id)),
+        );
+      })
+      .catch(() => setErrorMessage('Unable to delete some todos'))
+      .finally(() => {
+        setIsLoading(false);
+      });
   };
 
   const addTodo = ({ userId, title, completed }: Omit<Todo, 'id'>) => {
@@ -110,7 +108,6 @@ export const App: React.FC = () => {
     addTodos(temp)
       .then(newTodo => {
         setTodos(prevTodos => [...prevTodos, newTodo]);
-        setAllTodos(prevAll => [...prevAll, newTodo]);
         setTodoTitle('');
       })
       .catch(() => {
@@ -138,6 +135,18 @@ export const App: React.FC = () => {
     addTodo({ userId: 3308, title: trimmedTitle, completed: false });
   };
 
+  const filteredTodos = todos.filter(todo => {
+    if (currentSelect === 'Active') {
+      return !todo.completed;
+    }
+
+    if (currentSelect === 'Completed') {
+      return todo.completed;
+    }
+
+    return true;
+  });
+
   if (!USER_ID) {
     return <UserWarning />;
   }
@@ -157,7 +166,7 @@ export const App: React.FC = () => {
         />
 
         <section className="todoapp__main" data-cy="TodoList">
-          {todos.map(todo => (
+          {filteredTodos.map(todo => (
             <TodoItem
               key={todo.id}
               todo={todo}
@@ -178,13 +187,11 @@ export const App: React.FC = () => {
         </section>
 
         {/* Hide the footer if there are no todos */}
-        {allTodos.length !== 0 && (
+        {todos.length !== 0 && (
           <Footer
             todos={todos}
-            allTodos={allTodos}
             currentSelect={currentSelect}
-            onSaveTodos={setTodos}
-            onSaveCurrentSelect={setCurrentSelect}
+            onSelectStatus={setCurrentSelect}
             onClearCompleted={clearCompleted}
           />
         )}
