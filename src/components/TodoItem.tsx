@@ -16,15 +16,11 @@ export const TodoItem: React.FC<Props> = ({
   isDeletingId,
   onDeleteTodo,
 }) => {
-  const [isHovered, setIsHovered] = useState(false);
-
   return (
     <div
       key={todo.id}
       data-cy="Todo"
       className={classNames('todo', { completed: todo.completed })}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
     >
       <label className="todo__status-label">
         <input
@@ -43,7 +39,6 @@ export const TodoItem: React.FC<Props> = ({
         type="button"
         className="todo__remove"
         data-cy="TodoDelete"
-        disabled={isHovered}
         onClick={() => onDeleteTodo(todo.id)}
       >
         ×
